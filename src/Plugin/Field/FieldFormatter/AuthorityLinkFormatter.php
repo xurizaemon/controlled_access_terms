@@ -4,6 +4,7 @@ namespace Drupal\controlled_access_terms\Plugin\Field\FieldFormatter;
 
 use Drupal\Component\Utility\Unicode;
 use Drupal\Core\Field\FieldItemListInterface;
+use Drupal\Core\Form\FormStateInterface;
 use Drupal\link\Plugin\Field\FieldFormatter\LinkFormatter;
 
 /**
@@ -27,6 +28,15 @@ class AuthorityLinkFormatter extends LinkFormatter {
     // Open link in a new window by default.
     $settings['target'] = '_blank';
     return $settings;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function settingsForm(array $form, FormStateInterface $form_state) {
+    $form = parent::settingsForm($form, $form_state);
+    $form['url_only']['#access'] = $form['url_plain']['#access'] = ($this->getPluginId() == 'authority_formatter_default');
+    return $form;
   }
 
   /**
@@ -66,9 +76,13 @@ class AuthorityLinkFormatter extends LinkFormatter {
       if (!empty($settings['trim_length'])) {
         $link_title = Unicode::truncate($link_title, $settings['trim_length'], FALSE, TRUE);
       }
+      if (!empty($settings['url_only']) && empty($settings['url_plain'])) {
+        $link_title = $url->toString();
+      }
+
       if (!empty($settings['url_only']) && !empty($settings['url_plain'])) {
         $element[$delta] = [
-          '#plain_text' => $link_title,
+          '#plain_text' => $url->toString(),
         ];
         if (!empty($item->_attributes)) {
 
