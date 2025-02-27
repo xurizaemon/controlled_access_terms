@@ -2,12 +2,12 @@
 
 namespace Drupal\Tests\controlled_access_terms\Kernel\Plugin\Field\FieldFormatter;
 
+use Drupal\Core\Field\FieldStorageDefinitionInterface;
 use Drupal\KernelTests\KernelTestBase;
 use Drupal\field\Entity\FieldConfig;
 use Drupal\field\Entity\FieldStorageConfig;
-use Drupal\node\Entity\NodeType;
 use Drupal\node\Entity\Node;
-use Drupal\Core\Field\FieldStorageDefinitionInterface;
+use Drupal\node\Entity\NodeType;
 
 /**
  * Tests the EDTFFormatter field formatter.

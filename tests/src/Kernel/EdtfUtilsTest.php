@@ -2,8 +2,8 @@
 
 namespace Drupal\Tests\controlled_access_terms\Kernel;
 
-use Drupal\controlled_access_terms\EDTFUtils;
 use Drupal\KernelTests\KernelTestBase;
+use Drupal\controlled_access_terms\EDTFUtils;
 
 /**
  * Tests the EDTF Utils.
@@ -16,9 +16,9 @@ class EdtfUtilsTest extends KernelTestBase {
 
   /**
    * @covers ::validate
-   * @dataProvider validateProvider
+   * @dataProvider validateDefaultsProvider
    */
-  public function testEdtfValidate($input, $expected) {
+  public function testEdtfValidateDefaults($input, $expected) {
     $this->assertEquals($expected, EDTFUtils::validate($input, FALSE, FALSE, FALSE));
   }
 
@@ -30,7 +30,7 @@ class EdtfUtilsTest extends KernelTestBase {
    * @return array
    *   Array of test inputs.
    */
-  public function validateProvider(): array {
+  public function validateDefaultsProvider(): array {
     return [
       ['1900', []],
       ['1900-01', []],
@@ -50,17 +50,91 @@ class EdtfUtilsTest extends KernelTestBase {
       ['Y19000', []],
       ['190u', ['Could not parse the date \'190u\'.']],
       ['190', ['Years must be at least 4 characters long.']],
-      ['190-99-52', [
-        'Years must be at least 4 characters long.',
-        'Provided month value \'99\' is not valid.',
-        'Provided day value \'52\' is not valid.',
-      ]],
+      ['190-99-52',
+        [
+          'Years must be at least 4 characters long.',
+          'Provided month value \'99\' is not valid.',
+          'Provided day value \'52\' is not valid.',
+        ],
+      ],
       ['1900-01-02T', ['Time not provided with time seperator (T).']],
       ['1900-01-02T1:1:1', ['The date/time \'1900-01-02T1:1:1\' is invalid.']],
       ['1900-01-02T01:22:33', []],
       ['1900-01-02T01:22:33Z', []],
-      ['1900-01-02T01:22:33+', ['The date/time \'1900-01-02T01:22:33+\' is invalid.']],
+      ['1900-01-02T01:22:33+',
+        [
+          'The date/time \'1900-01-02T01:22:33+\' is invalid.',
+        ],
+      ],
       ['1900-01-02T01:22:33+05:00', []],
+    ];
+  }
+
+  /**
+   * @covers ::validate
+   * @dataProvider validateAllParamsProvider
+   */
+  public function testEdtfValidateAllParams($input, $intervals, $sets, $strict, $expected) {
+    $this->assertEquals($expected, EDTFUtils::validate($input, $intervals, $sets, $strict));
+  }
+
+  /**
+   * EDTF value and ISO 8601 Timestamp results.
+   *
+   * Empty values are valid (return no errors).
+   *
+   * @return array
+   *   Input, intervals, sets, strict, expected.
+   */
+  public function validateAllParamsProvider(): array {
+    return [
+      // Year only date.
+      ['1900', FALSE, TRUE, FALSE, []],
+
+      // Single.
+      ['12/24', FALSE, TRUE, FALSE, ['Could not parse the date \'12/24\'.']],
+      ['1024/2048', FALSE, TRUE, FALSE,
+        [
+          'Could not parse the date \'1024/2048\'.',
+        ],
+      ],
+
+      // Valid interval, years only.
+      ['1900/1920', TRUE, TRUE, FALSE, []],
+
+      // Interval separator but invalid years.
+      [
+        '12/24',
+        TRUE,
+        TRUE,
+        FALSE,
+        [
+          'Years must be at least 4 characters long.',
+          'Years must be at least 4 characters long.',
+        ],
+      ],
+
+      // Interval, one invalid year.
+      ['1999/24', TRUE, TRUE, FALSE,
+        [
+          'Years must be at least 4 characters long.',
+        ],
+      ],
+      ['1960-02/1960-03', TRUE, FALSE, FALSE, []],
+      ['1960-02-01/1960-03-25', TRUE, FALSE, TRUE, []],
+
+      // Invalid day value.
+      [
+        '1960-01-00',
+        FALSE,
+        FALSE,
+        TRUE,
+        [
+          'Provided day value \'00\' is not valid.',
+          'Strictly speaking, the date (and/or time) \'1960-01-00\' is invalid.',
+        ],
+      ],
+
     ];
   }
 
